@@ -5,12 +5,12 @@
 This repository documents my class work and projects done for **CPS342**
 
 1. **Personal Information:**
-   
+
     Name: Bryan Eng
 
     Major: Computer Science
 
-    ID: [N03265566](https://github.com/bryeng57?tab=repositories)
+    ID: [N03265566](https://github.com/N03265566?tab=repositories)
 
     Year: Senior
 
