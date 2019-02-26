@@ -1,3 +1,1 @@
-### Assignment 3
-
-Python code that logs the temperature of the room every minute.
+This is where I put my programs and code
