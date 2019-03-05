@@ -1,9 +1,10 @@
 #Import Libraries we will be using
-import RPi.GPIO as GPIO
 import Adafruit_DHT
-import time
+import RPi.GPIO as GPIO
 import os
+import time
 import sqlite3 as mydb
+import sys
 
 #Assign GPIO pins
 redPin = 27
@@ -25,44 +26,59 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(redPin,GPIO.OUT)
 GPIO.setup(buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-con = sqlite3.connect('/home/bryan/tempData.db')
+
 
 def oneBlink(pin):
-    GPIO.output(pin,True)
-    time.sleep(blinkDur)
-    GPIO.output(pin,False)
-    time.sleep(blinkDur)
+    	GPIO.output(pin,True)
+    	time.sleep(blinkDur)
+    	GPIO.output(pin,False)
+    	time.sleep(blinkDur)
 
-def readF(tempPin):
-    humidity, temperature = Adafruit_DHT.read_retry(tempSensor, tempPin)
-    temperature = temperature * 9/5.0 +32
-    if humidity is not None and temperature is not None:
-        tempFahr = '{0:0.1f}*F'.format(temperature)
-    else:
-        print('Error Reading Sensor')
-    return tempFahr
+def readTemp():
+	tempfile=open("/sys/bus/w1/devices/28-000006961c7b/w1_slave")
+	tempfile_text=tempfile.read()
+	currentTime=time.strftime("%x %X %Z")
+	tempfile.close()
+	tempC=float(tempfile_text.split("\n")[1].split("t=")[1])/1000
+	tempF=tempC* 9.0/5.0 +32.0
+    	return [currentTime, tempC, tempF]
 
-def writeF(temp):
-    with con:
-        try:
-            print "Temperature: %s temp" %(temp) #Gets temperature
-            cur = con.cursor() 
-            cur.execute(temp) #Reads temperature to SQL
-            print "Data sent"
-        except:
-            print "Error"
+def logTemp():
+	con = mydb.connect('/home/bryan/EL/ELSpring2019/code/Auto_Sensor/temperature.db')
+	with con:
+		try:
+			[t,C,F]=readTemp()
+			print "Current temperature is: %s F" %F
+			cur = con.cursor()
+			#sql = "insert into TempData values(?,?,?)"
+			cur.execute('insert into TempData values(?,?,?)',(t,C,F))
+			print "Temperature logged"
+		except mydb.Error, e:
+			print "Error %s:" %e.args[0]
+			sys.exit(1)
 
-n = 60
+def tableData():
+	cur.execute("Select * FROM TempData")
+	print(cur.fetchall())
+
 
 try:
-    while n > 0:
-        n = n-1
-        if n == 0:
-            data = readF(tempPin) #Temperature is read from the sensor
-            writeF(data) #Temperature is written to the SQL
-            n = 60 #Timer is set to 60 again
+	with open("../../log/templog.csv", "a") as log:
+		con = mydb.connect('/home/bryan/EL/ELSpring2019/code/Auto_Sensor/temperature.db')
+		while True:
+			for i in range(blinkTime):
+				oneBlink(redPin)
+			t,C,F = readTemp()
+			cur = con.cursor()
+			readTemp()
+			logTemp()
+			log.write("{0},{1},{2}\n".format(time.strftime("%Y,%m,%d %H:%M:%S"),C,F))
+			os.fsync(log)
+			tableData()
+			time.sleep(60)
+			os.system('clear')
 
 except KeyboardInterrupt:
-    os.system('clear')
-    print('Thanks for Blinking and Thinking!')
-    GPIO.cleanup()
+    	os.system('clear')
+    	print('Thanks for Blinking and Thinking!')
+    	GPIO.cleanup()
