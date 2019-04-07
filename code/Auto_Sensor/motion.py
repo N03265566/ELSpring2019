@@ -4,83 +4,98 @@ import os
 import time
 import sqlite3 as mydb
 import sys
+from flask import Flask, render_template, jsonify, request
+import smtplib
+import json
+import threading
 
 #Assign GPIO pins
 camPin1 = 13
 camPin2 = 26
-
 #Initialize the GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(camPin1, GPIO.IN)
 GPIO.setup(camPin2, GPIO.IN)
 
+count = 0
+
+def flask_thread():
+	conn = mydb.connect('../../log/motions.db', check_same_thread=False)
+	curr = conn.cursor()
+	app = Flask(__name__)
+
+	@app.route("/")
+	def index():
+		return render_template('index.html')
+
+	@app.route('/sqlData')
+	def chartData():
+		conn.row_factory = sqlite.Row
+		curr.execute("SELECT * FROM motionData")
+		dataset = curr.fetchall()
+		charData = []
+		for row in dataset:
+			charData.append({"Date": row[0], "Direction": row[1], "Count": row[2]})
+		return Response(json.dumps(chartData), mimetype='application/json')
+
+
+	if __name__ == "__main__":
+		app.run(host='0.0.0.0', port=8080, debug=True, use_reloader=False)
+
+webApp_thread = threading.Thread(target = flask_thread)
+webApp_thread.daemon = True
+webApp_thread.start()
+
+def trig1(pin1,pin2):
+	global order
+	i = GPIO.input(pin1)
+	j = GPIO.input(pin2)
+	if(i==1):
+		order = "Entry"
+		time.sleep(2)
+		trig2(camPin2,order)
+	if(j==1):
+		order = "Exit"
+		time.sleep(2)
+		trig2(camPin1,order)
+
+def trig2(pin,order):
+	global count
+	k = GPIO.input(pin)
+	if(k == 1):
+		if(order == "Entry"):
+			count += 1
+		if(order == "Exit"):
+			if(count!=0):
+				count -= 1
+		logTime(order)
+		time.sleep(5)
+
 def logTime(order):
-    con = mydb.connect('/home/bryan/EL/ELSpring2019/log/motions.db')
-    with con:
+	con = mydb.connect('../../log/motions.db')
+	with con:
 		try:
-                        if(order==1):
-                            T=time.strftime("%Y-%m-%d %H:%M:%S")
-                            cur = con.cursor()
-                            cur.execute('insert into motionData values(?)',(T))
-                            print "Entry logged"
-                        if(order==2):
-                            T=time.strftime("%Y-%m-%d %H:%M:%S")
-                            cur = con.cursor()
-                            cur.execute('insert into motionData values(?)',(T))
-                            print "Exit logged"
-                        else:
-                            break;
+			global count
+			T=time.strftime("%Y-%m-%d %H:%M:%S")
+			E = order
+			cur = con.cursor()
+			cur.execute('insert into motionData values(?,?,?)',(T,E,count))
+			print "Data logged"
+			print E
+			os.system('clear')
+			cur.execute("Select * FROM motionData")
+			print(cur.fetchall())
+
 		except mydb.Error, e:
 			print "Error %s:" %e.args[0]
 			sys.exit(1)
 
-def trig1(pin1,pin2,count):
-    i = GPIO.input(pin1)
-    j = GPIO.input(pin2)
-    if(i==1):
-        if(j==1):
-            logTime(1)
-            count++
-    if(j==1):
-        if(i==1):
-            logTime(2)
-            count--
-
-def bothTriggers(pin2, wait=5):
-    timestamp = False
-    timeCheck = time.time()
-	while not GPIO.input(pin2):
-		if time.time() - timeCheck > wait:
-            break
-        continue
-    if time.time() - timeCheck <= wait:
-        timeStamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        time.sleep(4)
-        continue
-
-def tableData():
-	cur.execute("Select * FROM motionData")
-	print(cur.fetchall())
-
-
 time.sleep(10)
 
 try:
-	with open("../../log/templog.csv", "a") as log:
-		con = mydb.connect('/home/bryan/EL/ELSpring2019/log/motions.db')
-		while True:
-                        cur = con.cursor()
-                        timeStamp = False
-                        if GPIO.input(camPin1):
-                            timeStamp = bothTriggers(roomPin)
-                            if timeStamp:
-                                count++;
-                        if GPIO.input(camPin2):
-                            timeStamp = bothTriggers(hallPin)
-                            if timeStamp:
-                                count--;
-			time.sleep(5)
-			os.system('clear')
+	con = mydb.connect('../../log/motions.db')
+	while True:
+		trig1(camPin1,camPin2)
 
 except mydb.Error, e:
 	print "Error %s:" %e.args[0]
@@ -90,4 +105,3 @@ except KeyboardInterrupt:
         GPIO.cleanup()
         con.close()
         print('Exited Cleanly')
-

@@ -1,3 +1,6 @@
+#!/usr/bin/python
+
+
 #Import Libraries we will be using
 import Adafruit_DHT
 import RPi.GPIO as GPIO
@@ -25,8 +28,6 @@ blinkTime = 7
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(redPin,GPIO.OUT)
 GPIO.setup(buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-
 
 def oneBlink(pin):
     	GPIO.output(pin,True)
@@ -82,3 +83,4 @@ except KeyboardInterrupt:
     	os.system('clear')
     	print('Thanks for Blinking and Thinking!')
     	GPIO.cleanup()
+
