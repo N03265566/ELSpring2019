@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-
 #Import Libraries we will be using
 import Adafruit_DHT
 import RPi.GPIO as GPIO
@@ -8,6 +7,10 @@ import os
 import time
 import sqlite3 as mydb
 import sys
+from flask import Flask, render_template, jsonify, Response
+import json
+import threading
+import smtplib
 
 #Assign GPIO pins
 redPin = 27
@@ -28,6 +31,28 @@ blinkTime = 7
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(redPin,GPIO.OUT)
 GPIO.setup(buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+def flask_thread():
+	conn = sqlite.connect('../../log/temperature.db', check_same_thread=False)
+	curr = conn.cursor()
+	app = Flask(__name__)
+
+	@app.route("/")
+	def index():
+		return render_template('index2.html')
+
+	@app,route('/sqlData')
+	def chartData():
+		conn.row_factory = sqlite.Row
+		curr.execute("SELECT * FROM TempData")
+		dataset = curr.fetchall()
+		charData = []
+		for row in dataset:
+			charData.append({"Date": row[0], "Celsius": row[1], "Fahrenheit": row[2]})
+		return Response(json.dumps(chartData), mimetype='application/json')
+
+		if __name__ == "__main__":
+			app.run(host='0.0.0.0', port=8080, debug=True, use_reloader=False)
 
 def oneBlink(pin):
     	GPIO.output(pin,True)
@@ -83,4 +108,3 @@ except KeyboardInterrupt:
     	os.system('clear')
     	print('Thanks for Blinking and Thinking!')
     	GPIO.cleanup()
-

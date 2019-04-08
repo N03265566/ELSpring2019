@@ -1,10 +1,12 @@
+#!/usr/bin/python
+
 #Import Libraries we will be using
 import RPi.GPIO as GPIO
 import os
 import time
 import sqlite3 as mydb
 import sys
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, Response
 import smtplib
 import json
 import threading
