@@ -1,0 +1,53 @@
+<!DOCTYPE html> <html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Motion Sensor Data</title>
+    	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    </head>
+    <body onload="go()">
+      <script type ='text.text/javascript'>
+        google.charts.load('current', { packages: ['corechart'] });
+        function go()
+        {
+          goTime = new Date();
+          console.log('Start ' + goTime);
+          getData();
+          setInterval(function()
+          {
+  		xTime = new Date();
+  		console.clear();
+  		console.log('Update Initiated: '+xTime);
+  		getData();
+		}, 60000);
+          }
+        function getData()
+        {
+          var chartData = [];
+          $.getJSON('/sqlData', function(chartJSON))
+          {
+            for(i = 0; i < chartJSON.length; i++)
+            {
+              charData.push([new Date(chartJSON[i].Date), chartJSON[i].Celsius, chartJSON[i].Fahrenheit]);
+              drawChart();
+            }
+          }
+        }
+        function drawChart()
+        {
+          var obtData = new google.visualization.DataTable();
+          obtData.addColumn('date', 'Date');
+	  obtData.addColumn('number', 'Celsius');
+          obtData.addColumn('count', 'Fahrenheit');
+	  obtData.addRows(chartData);
+          var options = {
+            title: 'Temperature Log',
+	    curveType: 'function',
+	    legend: { position: 'center' }
+          };
+            var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+	    chart.draw(gdata, options);
+	    chartTime = new Date();
+        }
+       		</script>
+	</body> </html>
