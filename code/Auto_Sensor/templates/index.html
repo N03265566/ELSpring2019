@@ -2,14 +2,25 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
     <title>Motion Sensor Data</title>
-    	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     </head>
 
     <body onload="go()">
-      <script type ='text.text/javascript'>
-        google.charts.load('current', { packages: ['corechart'] });
+	<center>
+		<div id="table"></div>
+    		<div id="curve_chart" style="width: 1200px; height: 1200px"></div>
+    	</center>
+      <script type ='text/javascript'>
+		google.charts.load('current', { packages: ['corechart'] });
+
+	var chartData = [];
 
         function go()
         {
@@ -27,32 +38,35 @@
 
         function getData()
         {
-          var chartData = [];
-          $.getJSON('/sqlData', function(chartJSON))
+          chartData = [];
+          $.getJSON('/sqlData', function(chartJSON)
           {
             for(i = 0; i < chartJSON.length; i++)
             {
-              charData.push([new Date(chartJSON[i].Date), chartJSON[i].Direction, chartJSON[i].Count]);
-              drawChart();
-            }
-          }
+              chartData.push([new Date(chartJSON[i].Time), chartJSON[i].Direction, chartJSON[i].Count]);
+             };
+	     drawChart();
+            
+          });
         }
 
         function drawChart()
         {
           var obtData = new google.visualization.DataTable();
-          obtData.addColumn('date', 'Date');
-	  obtData.addColumn('number', 'Direction');
-          obtData.addColumn('count', 'Count');
-	  obtData.addRows(chartData);
+          obtData.addColumn('date', 'Time');
+          obtData.addColumn('number', 'Count');
+	  for(i=0; i < chartData.length; i++)
+	  {
+                obtData.addRow([chartData[i][0], chartData[i][2]])
+            }
 
           var options = {
             title: 'Motion Log',
 	    curveType: 'function',
-	    legend: { position: 'center' }
+	    legend: { position: 'bottom' }
           };
             var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
-	    chart.draw(gdata, options);
+	    chart.draw(obtData, options);
 	    chartTime = new Date();
         }
 

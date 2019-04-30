@@ -21,32 +21,7 @@ GPIO.setup(camPin2, GPIO.IN)
 
 count = 0
 
-def flask_thread():
-	conn = mydb.connect('../../log/motions.db', check_same_thread=False)
-	curr = conn.cursor()
-	app = Flask(__name__)
 
-	@app.route("/")
-	def index():
-		return render_template('index.html')
-
-	@app.route('/sqlData')
-	def chartData():
-		conn.row_factory = sqlite.Row
-		curr.execute("SELECT * FROM motionData")
-		dataset = curr.fetchall()
-		charData = []
-		for row in dataset:
-			charData.append({"Date": row[0], "Direction": row[1], "Count": row[2]})
-		return Response(json.dumps(chartData), mimetype='application/json')
-
-
-	if __name__ == "__main__":
-		app.run(host='0.0.0.0', port=8080, debug=True, use_reloader=False)
-
-webApp_thread = threading.Thread(target = flask_thread)
-webApp_thread.daemon = True
-webApp_thread.start()
 
 def trig1(pin1,pin2):
 	global order
@@ -91,6 +66,33 @@ def logTime(order):
 		except mydb.Error, e:
 			print "Error %s:" %e.args[0]
 			sys.exit(1)
+
+def flask_thread():
+	conn = mydb.connect('../../log/motions.db', check_same_thread=False)
+	curr = conn.cursor()
+	app = Flask(__name__)
+
+	@app.route("/")
+	def index():
+		return render_template('index.html')
+
+	@app.route('/sqlData')
+	def chartData():
+		conn.row_factory = mydb.Row
+		curr.execute("SELECT * FROM motionData")
+		dataset = curr.fetchall()
+		chartData = []
+		for row in dataset:
+			chartData.append({"Time": row[0], "Direction": row[1], "Count": int(row[2])})
+		return Response(json.dumps(chartData), mimetype='application/json')
+
+
+	if __name__ == "__main__":
+		app.run(host='0.0.0.0', port=8080, debug=True, use_reloader=False)
+
+webApp_thread = threading.Thread(target = flask_thread)
+webApp_thread.daemon = True
+webApp_thread.start()
 
 time.sleep(10)
 
